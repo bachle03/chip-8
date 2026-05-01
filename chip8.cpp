@@ -123,12 +123,13 @@ void chip8::run_cycle() {
                     this->V[X] ^= this->V[Y];
                     break;
                 case 0x0004: // 8xy4 - ADD Vx, Vy
-                    this->V[F] = this->V[X] + this->V[Y] > 255 ? 0 : 1;
                     this->V[X] += this->V[Y];
+                    this->V[F] = this->V[X] < this->V[Y];
                     break;
                 case 0x0005: // 8xy5 - SUB Vx, Vy
-                    this->V[F] = this->V[X] < this->V[Y] ? 0 : 1;
+                    const uint8_t no_borrow = this->V[X] >= this->V[Y];
                     this->V[X] -= this->V[Y];
+                    this->V[F] = no_borrow;
                     break;
                 case 0x0006: // 8xy6 - SHR Vx {, Vy}
                     this->V[F] = this->V[X] & 1;
@@ -202,13 +203,17 @@ void chip8::run_cycle() {
                     this->V[X] = this->delayTimer;
                     break;
                 case 0x000A: // Fx0A - LD Vx, K
+                    bool pressed = false;
                     for (uint8_t i = 0; i < 16; ++i) {
                         if (this->keypad[i]) {
-                            this->V[F] = i;
+                            this->V[X] = i;
+                            pressed = true;
                             break;
                         }
                     }
-                    this->PC -=2;
+                    if (pressed) {
+                        this->PC -=2;
+                    }
                     break;
                 case 0x0015: // Fx15 - LD DT, Vx
                     this->delayTimer = this->V[X];
